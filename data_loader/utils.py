@@ -20,6 +20,27 @@ def read_frame(path, norm_val = None, rotate = None):
 
     return np.expand_dims(frame, axis = 0)
 
+
+
+def preproc_frame(img:np.ndarray, norm_val = None, rotate:bool = None):
+    frame = img
+    # frame = cv2.cvtColor(img, cv2.IMREAD_COLOR)
+    if norm_val == (2**16-1):
+        # frame = cv2.imread(img, -1)
+        if rotate is not None:
+            frame = cv2.rotate(frame, rotate)
+        frame = frame / norm_val
+        frame = frame[...,::-1]
+    else:
+        # frame = cv2.cvtColor(img, -1)
+        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        if rotate is not None:
+            frame = cv2.rotate(frame, rotate)
+        # frame = frame / 255.
+
+
+    return np.expand_dims(frame, axis = 0)
+
 def crop_multi(x, hrg, wrg, is_random=False, row_index=0, col_index=1):
 
     h, w = x[0].shape[row_index], x[0].shape[col_index]

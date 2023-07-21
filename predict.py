@@ -6,7 +6,7 @@ from ckpt_manager import CKPT_Manager
 from models import create_model
 
 from utils import *
-from data_loader.utils import load_file_list, refine_image, read_frame
+from data_loader.utils import load_file_list, refine_image, read_frame, preproc_frame
 
 from pathlib import Path
 import tempfile
@@ -51,7 +51,34 @@ class Predictor(cog.BasePredictor):
 
         return out_path
 
-    def predict_img(self, image):
+    def predict_image(self, image):
+        max_side = 1920
+        # assert str(image).split('.')[-1] in ['png', 'jpg'], 'image should end with ".jpg" or ".png"'
+        #
+        C_cpu = preproc_frame(image, self.config.norm_val, None)
+
+        # assert max(image) <= 1
+        b, h, w, c = C_cpu.shape
+        if max(h, w) > max_side:
+            scale_ratio = max_side / max(h, w)
+            C_cpu = np.expand_dims(cv2.resize(C_cpu[0], dsize=(int(w*scale_ratio), int(h*scale_ratio)), interpolation=cv2.INTER_AREA), 0)
+
+        C = torch.FloatTensor(refine_image(C_cpu, self.config.refine_val).transpose(0, 3, 1, 2).copy()).to(self.device)
+
+        with torch.no_grad():
+            out = self.network(C)
+
+        output = out['result']
+        output_cpu = output.cpu().numpy()[0].transpose(1, 2, 0)
+        # output_cpu = (np.flip(output_cpu, 2) * 255).astype(np.uint8)
+        output_cpu = (output_cpu * 255).astype(np.uint8)
+
+        # out_path = Path(tempfile.mkdtemp()) / 'out.jpg'
+        # cv2.imwrite(str(out_path), output_cpu)
+
+        return output_cpu
+
+    def predict_image_old(self, image):
         max_side = 1920
         # assert str(image).split('.')[-1] in ['png', 'jpg'], 'image should end with ".jpg" or ".png"'
         #
@@ -72,7 +99,7 @@ class Predictor(cog.BasePredictor):
         output_cpu = output.cpu().numpy()[0].transpose(1, 2, 0)
         output_cpu = (np.flip(output_cpu, 2) * 255).astype(np.uint8)
 
-        out_path = Path(tempfile.mkdtemp()) / 'out.jpg'
-        cv2.imwrite(str(out_path), output_cpu)
+        # out_path = Path(tempfile.mkdtemp()) / 'out.jpg'
+        # cv2.imwrite(str(out_path), output_cpu)
 
         return output_cpu

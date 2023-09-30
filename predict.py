@@ -23,7 +23,7 @@ class Predictor(cog.BasePredictor):
         self.network = self.network.to(self.device)
 
         ckpt_manager = CKPT_Manager(root_dir='', model_name='IFAN', cuda=True)
-        load_state, ckpt_name = ckpt_manager.load_ckpt(self.network, abs_name = 'C:/Users/Meriel/Documents/GitHub/IFAN/./ckpt/IFAN.pytorch')
+        load_state, ckpt_name = ckpt_manager.load_ckpt(self.network, abs_name = f"{__file__.replace('predict.py', '')}ckpt/IFAN.pytorch")
 
     # @cog.input("image", type=Path, help="Input image, only supports images with .png and .jpg extensions")
     def predict(self, image):
